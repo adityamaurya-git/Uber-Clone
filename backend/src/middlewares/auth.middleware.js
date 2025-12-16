@@ -1,4 +1,5 @@
 const userModel = require('../models/user.model');
+const captainModel = require('../models/captain.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
@@ -42,6 +43,41 @@ const authUserMiddleware = async (req , res , next) =>{
     }
 }
 
+const authCaptainMiddleware = async (req, res, next) =>{
+
+    const token = req.cookies.token;
+    if(!token){
+        return res.status(401).json({
+            message: "Unauthorized access."
+        })
+    }
+
+    try{
+
+        // VERIFYING TOKEN:-
+        const decodedToken = jwt.verify(token , process.env.JWT_SECRET);
+
+        // FINDING CAPTAIN FROM DECODED TOKEN:-
+        const captain = await captainModel.findById(decodedToken.captainId);
+
+        if(!captain){
+            return res.status(401).json({
+                message: "Captain not Found."
+            })
+        }
+
+        req.captain = captain;
+        next();
+    }
+    catch(err){
+        return res.status(400).json({
+            message:" Error in authenticating captain.",
+            error: err.message
+        })
+    }
+}
+
 module.exports = {
     authUserMiddleware,
+    authCaptainMiddleware
 }
